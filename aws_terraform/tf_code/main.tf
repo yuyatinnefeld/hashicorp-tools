@@ -2,7 +2,7 @@ terraform {
   backend "remote"{
     organization = "yuyatinnefeld"
     workspaces {
-      name = "YT-Workspace"
+      name = "YT-AWS-Workspace"
     }
   }
 
