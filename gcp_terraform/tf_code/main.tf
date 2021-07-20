@@ -1,4 +1,11 @@
 terraform {
+  backend "remote"{
+    organization = "yuyatinnefeld"
+    workspaces {
+      name = "YT-Workspace"
+    }
+  }
+  
   required_providers {
     google = {
       source  = "hashicorp/google"
