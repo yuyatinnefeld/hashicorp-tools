@@ -1,11 +1,11 @@
 # AWS + Terraform
 
-## LINUX Setup
+## Info
 - https://learn.hashicorp.com/tutorials/terraform/install-cli
 -https://learn.hashicorp.com/tutorials/terraform/infrastructure-as-code?in=terraform/aws-get-started
 
 
-install:
+## Install Terraform:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y gnupg software-properties-common curl
@@ -19,7 +19,7 @@ check:
 terraform -help
 ```
 
-## AWS setup
+## AWS setup 1
 1. create a terraform user with the AdministrationAccess
 2. download the credentials.csv
 3. save the credentials.csv in your project
@@ -49,7 +49,33 @@ aws_access_key_id=yyyyyyyyyyyyy
 aws_secret_access_key=xxxxxxxxxxxx
 ```
 
-7. create terraform code
+OR
+
+## AWS Setup 2 via aws cli
+
+```bash
+aws configure
+AWS Acess Key ID XXXXXXXXX
+AWS Secret Access Key YYYYYYYYYYYY
+```
+
+```bash
+aws sts get-caller-identity
+```
+
+```bash
+aws ec2 create-key-pair --key-name tf_key --query 'KeyMaterial' --output text > tf_key.pem
+```
+
+
+## Terraform Setup 
+
+create terraform_dir   
+```bash
+mkdir tf_code
+```
+
+create terraform code
 ```bash
 vim first_code.tf
 ```
@@ -66,15 +92,8 @@ resource "aws_s3_bucket" "tf_course" {
 }
 ```
 
-8. create terraform_dir 
+terraform config start
 ```bash
-mkdir terraform_code
-```
-
-
-9. create terraform
-```bash
-cd terraform_code
 terraform init
 ```
 
@@ -92,14 +111,14 @@ Terraform has been successfully initialized!
 ...
 ```
 
-10. launch the terraform aws setup
+launch the terraform aws setup
 ```bash
+terraform plan
 terraform apply
 ```
 
 
 ```bash
-
 ....
 Do you want to perform these actions?
   Terraform will perform the actions described above.
@@ -114,7 +133,7 @@ if you don't need the infrastructure anymore
 terraform destroy
 ```
 
-11. define the input variable
+define the input variable
 ```bash
 vi variables.tf
 ```
@@ -128,7 +147,6 @@ variable "instance_name" {
 ```
 
 change the main.tf
-
 
 ```bash
 tags = {

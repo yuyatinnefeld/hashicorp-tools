@@ -26,7 +26,12 @@ resource "aws_instance" "app_server" {
   instance_type = "t2.micro"
 
   tags = {
-    Name = var.instance_name
+    Name = "ExampleYT-Instance"
   }
+}
+
+resource "aws_s3_bucket" "prod_tf"{
+  bucket = "tf-yt-learning-20210721"
+  acl	 = "private"
 }
 
