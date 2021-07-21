@@ -64,7 +64,13 @@ venv
 keypar.pem
 
 #terraform
+*.pem
+*.tfvars
+*.tfplan
+*.tfstate
+*.lock.info
+*.tfstate
+*.tfstate.backup
 .terraform
 .terraform.lock.hcl
-terraform.tfstate
-terraform.tfstate.backup
+
