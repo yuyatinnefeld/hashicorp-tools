@@ -4,7 +4,7 @@ terraform {
     organization = "yuyatinnefeld"
 
     workspaces {
-      name = "YT-GCP-Workspace"
+      name = "GCP-terraform-yuya"
     }
   }
   
@@ -20,7 +20,7 @@ terraform {
 provider "google" {
   credentials = file("conf/service_account.json")
 
-  project = "gcp-terraform-320011"
+  project = "terraform-yuya"
   region  = "europe-west3"
   zone    = "europe-west3-b"
 }
