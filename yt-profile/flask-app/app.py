@@ -12,5 +12,5 @@ def salvador():
             
 if __name__ == "__main__":
     #app.run(debug=True)
-    app.run(host='127.0.0.1', port=8080, debug=True)
-    #app.run(host="34.141.68.174")
+    #app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host="0.0.0.0")
