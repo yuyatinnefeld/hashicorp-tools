@@ -4,6 +4,9 @@ Terraform allows infrastructure to be expressed as code in a simple, human reada
 
 ## Terraform + GCP
 
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp)
+
 ## Terraform + AWS
 
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws)
 
