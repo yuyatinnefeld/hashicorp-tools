@@ -9,7 +9,7 @@
 
 ## GTM Setup
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp/setup_gpc)
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp/setup_gcp)
 
 
 ## Terraform Setup 
