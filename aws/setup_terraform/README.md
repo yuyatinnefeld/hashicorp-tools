@@ -4,22 +4,26 @@
 
 ```bash
 mkdir tf_code
+cd tf_code
 ```
 
 ## create terraform code
 ```bash
-vim first_code.tf
+vi main.tf
 ```
+
+### create a s3 bucket
 
 ```bash
 provider "aws" {
-  profile = "default"
-  region = "eu-central-1"
+  access_key = "xxxxxxx"
+  secret_key = "yyyyyyy"
+  region     = "zzzzzzz"
 }
 
-resource "aws_s3_bucket" "tf_course" {
-  bucket = "tf-yuya-20210717"
-  acl = "private"
+resource "aws_s3_bucket" "prod_tf"{
+  bucket = "tf-yt-learning-20210721"
+  acl	 = "private"
 }
 ```
 
@@ -28,23 +32,15 @@ resource "aws_s3_bucket" "tf_course" {
 terraform init
 ```
 
-```bash
-Initializing the backend...
-
-Initializing provider plugins...
-- Finding latest version of hashicorp/aws...
-- Installing hashicorp/aws v3.50.0...
-- Installed hashicorp/aws v3.50.0 (signed by HashiCorp)
-
-...
-Terraform has been successfully initialized!
-
-...
-```
-
 ## launch the terraform aws setup
 ```bash
+# check the configuration plan
 terraform plan
+
+# validate the configuration
+terraform validate
+
+# apply the configuration
 terraform apply
 ```
 
@@ -64,23 +60,11 @@ Do you want to perform these actions?
 terraform destroy
 ```
 
-## define the input variable
-```bash
-vi variables.tf
-```
+## Terraform Variable, Output Setup
 
-```bash
-variable "instance_name" {
-  description = "Value of the Name tag for the EC2 instance"
-  type        = string
-  default     = "ExampleAppServerInstance"
-}
-```
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/setup_terraform/varible_outputs)
 
-## change the main.tf with the the parameter
 
-```bash
-tags = {
-  Name = var.instance_name
-}
-``` 
+## Terraform Cloud Setup
+
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/setup_terraform/cloud)

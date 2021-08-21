@@ -16,6 +16,16 @@ provider "aws" {
   region     = var.region
 }
 
-variable "subnet_prefix" {
-  description = "cidr block for the subnet"
+resource "aws_instance" "app_server" {
+  ami           = "ami-0a86f18b52e547759"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "ExampleYT-Instance"
+  }
+}
+
+resource "aws_s3_bucket" "prod_tf"{
+  bucket = "tf-yt-learning-20210721"
+  acl	 = "private"
 }

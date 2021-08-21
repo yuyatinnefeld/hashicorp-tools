@@ -16,11 +16,17 @@ check:
 terraform -help
 ```
 
-## Terraform + GCP
+## Docker + Terraform
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp)
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/docker)
 
-## Terraform + AWS
+
+## AWS + Terraform
 
 [Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws)
+
+
+## GCP + Terraform
+
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp)
 

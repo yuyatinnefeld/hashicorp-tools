@@ -1,8 +1,9 @@
 terraform {
-  backend "remote"{
+  backend "remote" {
     organization = "yuyatinnefeld"
+
     workspaces {
-      name = "YT-AWS-Workspace"
+      name = "YT-AWS-Workspace123"
     }
   }
 
@@ -30,8 +31,7 @@ resource "aws_instance" "app_server" {
   }
 }
 
-resource "aws_s3_bucket" "prod_tf"{
+resource "aws_s3_bucket" "prod_tf" {
   bucket = "tf-yt-learning-20210721"
-  acl	 = "private"
+  acl    = "private"
 }
-
