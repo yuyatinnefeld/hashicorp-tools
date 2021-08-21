@@ -62,7 +62,7 @@ terraform destroy
 
 ## Terraform Variable, Output Setup
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/setup_terraform/varible_outputs)
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/setup_terraform/variable_outputs)
 
 
 ## Terraform Cloud Setup
