@@ -1,4 +1,6 @@
-# Terraform Codecamp Learn
+# Create Apache Web Server in AWS
+
+- https://dev.to/chefgs/create-apache-web-server-in-aws-using-terraform-1fpj
 
 ## aws config
 
@@ -9,8 +11,8 @@ aws config
 ## tutorial 1 - vpc & subnet
 
 ```bash
-mkdir tutorial1
-cd tutorial1
+mkdir tutorial12
+cd tutorial12
 ```
 
 ```bash
@@ -49,4 +51,10 @@ aws ec2 create-key-pair --key-name tf_key --query 'KeyMaterial' --output text > 
 
 ```bash
 cd tutorial2
+terraform init
+terraform plan -var-file=aws.tfvars
+terraform apply -var-file=aws.tfvars -auto-approve
+# eu-central-1
+
+terraform destroy -var-file=aws.tfvars -auto-approve
 ```
