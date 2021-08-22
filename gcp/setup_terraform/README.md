@@ -52,7 +52,7 @@ terraform apply --auto-approve
 
 
 # delete the configuration
-terraform apply --auto-approve
+terraform destroy --auto-approve
 ```
 
 Running Terraform on your workstation.

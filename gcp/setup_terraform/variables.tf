@@ -1,5 +1,5 @@
 variable "cred" {
-    default = "/home/ytubuntu/yu/terraform/gcp/conf/service_account.json"
+    default = "./conf/service_account.json"
 }
 
 variable "project_id" {

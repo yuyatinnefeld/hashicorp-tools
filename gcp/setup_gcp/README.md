@@ -1,20 +1,33 @@
 # GCP Setup
 
+## Option 1: Use the service account json 
 
-## Login GCP
+- create a service account
+- download and locate this in your project
+- define the file path in the main.tf
 
+
+```bash
+provider "google" {
+  credentials = file(var.cred)
+
+  ...
+```
+
+## Option 2: Login via CLI as Google Account User
+
+
+### Login GCP
 ```bash
 gcloud version
 gcloud auth login
 ```
 
-
-## Crearte a service account and mark as Owner
+### Crearte a service account and mark as Owner
 
 ```bash
 #!/bin/bash
-PROJECT="terraform yuya"
-PROJECT_ID="terraform-yuya"
+PROJECT_ID="yyterraform"
 REGION="europe-west3"
 ZONE="europe-west3-b"
 LABEL="terraform"
@@ -22,8 +35,6 @@ SERVICE_NAME="developer"
 SERVICE_ACCOUNT=${SERVICE_NAME}"@"${PROJECT_ID}".iam.gserviceaccount.com" 
 ROLE_NAME="roles/owner"
 
-# CREATE A GCP PROJECT
-#gcloud projects create ${PROJECT_ID} --name=${PROJECT} --labels=type=${LABEL}
 
 # CONFIG A GCP PROJECT 
 gcloud config set project ${PROJECT_ID}

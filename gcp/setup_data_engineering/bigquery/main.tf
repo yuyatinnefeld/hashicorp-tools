@@ -25,10 +25,23 @@ provider "google" {
   zone    = var.zone
 }
 
-resource "google_bigquery_dataset" "default" {
-  dataset_id                  = "example_terarara_dataset"
-  friendly_name               = "test"
-  description                 = "This is a test description"
+resource "google_bigquery_dataset" "prod_dataset" {
+  dataset_id                  = var.ds_prod_name
+  friendly_name               = "prod"
+  description                 = "This is a prod description"
+  location                    = "EU"
+  default_table_expiration_ms = 3600000
+
+  labels = {
+    env = "default"
+  }
+}
+
+
+resource "google_bigquery_dataset" "dev_dataset" {
+  dataset_id                  = var.ds_dev_name
+  friendly_name               = "dev"
+  description                 = "This is a dev description"
   location                    = "EU"
   default_table_expiration_ms = 3600000
 
@@ -42,8 +55,8 @@ resource "google_service_account" "bqowner" {
 }
 
 
-resource "google_bigquery_table" "default" {
-  dataset_id = google_bigquery_dataset.default.dataset_id
+resource "google_bigquery_table" "prod_tb" {
+  dataset_id = google_bigquery_dataset.prod_dataset.dataset_id
   table_id   = "bar"
 
   time_partitioning {
@@ -54,22 +67,24 @@ resource "google_bigquery_table" "default" {
     env = "default"
   }
 
-  schema = <<EOF
-[
-  {
-    "name": "permalink",
-    "type": "STRING",
-    "mode": "NULLABLE",
-    "description": "The Permalink"
-  },
-  {
-    "name": "state",
-    "type": "STRING",
-    "mode": "NULLABLE",
-    "description": "State where the head office is located"
+  schema = file("bq_schema.json")
+
+}
+
+
+resource "google_bigquery_table" "dev_tb" {
+  dataset_id = google_bigquery_dataset.dev_dataset.dataset_id
+  table_id   = "sales"
+
+  time_partitioning {
+    type = "DAY"
   }
-]
-EOF
+
+  labels = {
+    env = "default"
+  }
+
+  schema = file("bq_schema.json")
 
 }
 
