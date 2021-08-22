@@ -33,21 +33,26 @@ resource "google_compute_network" "vpc_network" {
   name = "terraform-network"
 }
 ```
+## enable GCP Compute Engine API
 
-## terraform migrate
+## terraform setup
 
 ```bash
+# initialize terraform
 terraform init
-```
-## delete the local state file
-```bash
+
+# delete the local state file
 rm terraform.tfstate
-```
 
-## terraform apply
+# validate the configuration
+terraform validate
 
-```bash
-terraform apply
+# apply the configuration
+terraform apply --auto-approve
+
+
+# delete the configuration
+terraform apply --auto-approve
 ```
 
 Running Terraform on your workstation.
@@ -59,8 +64,7 @@ gcloud auth application-default login
 ```
 
 
-
-## Terraform Cloud
+## Terraform Cloud + GCP
 
 ### create organization by terraform cloud
 
