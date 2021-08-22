@@ -30,7 +30,7 @@ terraform apply --auto-approve
 terraform destroy --auto-approve
 ```
 
-## tutorial 2 - ec2 instance
+## tutorial 2 - deploy apache2 webserver
 
 ### steps
 0. create keypair.pem
