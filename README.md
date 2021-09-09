@@ -30,3 +30,12 @@ terraform -help
 
 [Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp)
 
+
+## Snowflake + Terraform
+
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/snowflake)
+
+
+## Snowflake + Terraform + Github Actions
+
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/snowflake/cicd)
