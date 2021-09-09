@@ -38,4 +38,4 @@ terraform -help
 
 ## Snowflake + Terraform + Github Actions
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/snowflake/cicd)
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/snowflake/github_cicd)
