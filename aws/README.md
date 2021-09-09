@@ -16,3 +16,7 @@
 [Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/setup_terraform)
 
 
+## Terraform + AWS + Github Actions 
+
+[Details](https://github.com/yuyatinnefeld/terraform/tree/master/aws/github_actions)
+
