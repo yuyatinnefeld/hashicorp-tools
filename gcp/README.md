@@ -7,7 +7,7 @@
 - https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
 
 
-## GTM Setup
+## GCP Setup
 
 [Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp/setup_gcp)
 
