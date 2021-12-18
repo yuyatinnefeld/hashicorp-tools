@@ -1,42 +1,13 @@
-variable "aws_access_key" {}
-
-variable "aws_secret_key" {}
-
-variable "ssh_key_name" {}
-
-variable "private_key_path" {}
-
-variable "region" {
-  default = "eu-central-1"
-}
-
-variable "vpc_cdir" {
-  default = "172.16.0.0/16"
-}
-
-variable "subnet1_cidr" {
-  default = "172.16.0.0/24"
-}
-
-provider "aws" {
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-  region     = var.region
-}
-
-# S3 BUCKET
 resource "aws_s3_bucket" "prod_tf"{
   bucket = "tf-yt-learning-20210721"
   acl	 = "private"
 }
 
-# VPC
 resource "aws_vpc" "vpc1" {
   cidr_block           = var.vpc_cdir
   enable_dns_hostnames = "true"
 }
 
-# SUBNET
 resource "aws_subnet" "subnet1" {
   cidr_block = var.subnet1_cidr
   vpc_id = aws_vpc.vpc1.id
@@ -44,12 +15,10 @@ resource "aws_subnet" "subnet1" {
   availability_zone = data.aws_availability_zones.available.names[1]
 }
 
-# INTERNET_GATEWAY
 resource "aws_internet_gateway" "gateway1" {
   vpc_id = aws_vpc.vpc1.id
 }
 
-# ROUTE_TABLE
 resource "aws_route_table" "route_table1" {
   vpc_id = aws_vpc.vpc1.id
 
@@ -64,7 +33,6 @@ resource "aws_route_table_association" "route-subnet1" {
   route_table_id = aws_route_table.route_table1.id
 }
 
-# SECURITY_GROUP
 resource "aws_security_group" "sg-nodejs-instance" {
   name = "nodejs_sg"
   vpc_id = aws_vpc.vpc1.id
@@ -98,7 +66,6 @@ resource "aws_security_group" "sg-nodejs-instance" {
   }
 }
 
-# INSTANCE
 resource "aws_instance" "nodejs1" {
   ami = data.aws_ami.aws-linux.id
   instance_type = "t2.micro"
