@@ -65,7 +65,6 @@ keypar.pem
 
 #terraform
 *.pem
-*.tfvars
 *.tfplan
 *.tfstate
 *.lock.info
