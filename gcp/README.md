@@ -1,17 +1,24 @@
-# GCP + Terraform
+# GCP Terraform CICD Pipeline
 
-## Info
-- https://cloud.google.com/architecture/managing-infrastructure-as-code
-- https://registry.terraform.io/providers/hashicorp/google/latest/docs
-- https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_table
-- https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
+## Github CICD
+./github
 
+## Gitlab CICD
+.gitlab-ci.yaml
 
-## GCP Setup
+### Gitlab Credentials Key
+Save the Service Account Key as Gitlab CICD Variable
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp/setup_gcp)
+### GCP Credentials Key for Github
+```bash
+vi gcp-credentials-key.json
+press :
 
+Add the following 
+%s;\n; ;g
+Press enter.
 
-## Terraform Setup 
+press : again
 
-[Details](https://github.com/yuyatinnefeld/terraform/tree/master/gcp/setup_terraform)
+type wq!
+```
