@@ -72,6 +72,9 @@ gcloud compute firewall-rules delete allow-http-web-server
 # create a service 
 vi service_account.tf
 
+# download the service key and use the service in the vm instance
+gcloud auth activate-service-account --key-file credentials.json
+
 # test one more time
 gcloud compute firewall-rules list
 
