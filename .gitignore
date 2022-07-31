@@ -73,3 +73,8 @@ keypar.pem
 .terraform
 .terraform.lock.hcl
 
+#credentials
+creds
+
+#terragrunt cache
+.terragrunt-cache
