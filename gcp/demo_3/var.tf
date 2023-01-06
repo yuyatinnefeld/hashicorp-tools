@@ -1,11 +1,8 @@
-variable "project_id" {
-  default = "yuyatinnefeld-dev"
-}
+### GENERAL ENV ###
+variable "project" {}
+variable "env" {}
+variable "region" {}
+variable "zone" {}
 
-variable "region" {
-  default = "europe-west1"
-}
-
-variable "zone" {
-  default = "europe-west1-b"
-}
+### NETWORK ENV ####
+variable "vpc_network_name" {}

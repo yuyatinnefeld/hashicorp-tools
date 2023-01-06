@@ -1,81 +1,97 @@
-# GCP VPC Networks - Controlling Access
- 
+# GCP VPC Network Basics
+
 ## Info
-https://www.cloudskillsboost.google/focuses/1231?parent=catalog
+- https://www.cloudskillsboost.google/focuses/1230?parent=catalog
 
+## Step 1 Create VPC and Subnets
+vi network.tf
 
-## Create an nginx web server
+## Step 2 Create FW Rules
+vi fw-rules.tf
+
+## Step 3 Verify
+gcloud compute firewall-rules list --sort-by=NETWORK
+
+## Step 4 Create VM Instances
 ```bash
-# create 2 nginx vms
-vi vm.tf
-terraform apply
+# create a bucket
+vi storage.tf
 
-# ssh connect blue vm
-gcloud compute ssh --zone "europe-west1-b" "blue"  --project "yuyatinnefeld-dev"
+# upload a startup-script into the bucket
+gsutil cp startup.sh gs://yuyatinnefeld-dev-script
 
-# edit welcome page (Welcome to nginx! > Welcome blue server!)
-sudo nano /var/www/html/index.nginx-debian.html
+# create vms and deploy
+vm.tf
 
-# verify
-cat /var/www/html/index.nginx-debian.html
-
-
-# ssh connect green vm
-gcloud compute ssh --zone "europe-west1-b" "green"  --project "yuyatinnefeld-dev"
-
-# edit welcome page (Welcome to nginx! > Welcome green server!)
-sudo nano /var/www/html/index.nginx-debian.html
-
-```
-
-## Create tagged firewall rules
-```bash
-vi fw_rules.tf
-```
-
-## Test Connections
-```bash
-# check the internal ips
+# verify that you have 4 vms
 gcloud compute instances list --sort-by=ZONE
-
-gcloud compute ssh --zone "europe-west1-b" "test-vm"  --project "yuyatinnefeld-dev"
-
-# connect with blue and green internal ips
-BLUE_INTERNAL_IP=10.0.0.12
-curl $BLUE_INTERNAL_IP # WORK
-GREEN_INTERNAL_IP=10.0.0.13
-curl $GREEN_INTERNAL_IP # WORK
-
-
-# connect with blue and green external ips
-BLUE_EXTERNAL_IP=35.187.70.172
-curl $BLUE_EXTERNAL_IP # WORK
-GREEN_EXTERNAL_IP=34.140.199.243
-curl $GREEN_EXTERNAL_IP # NOT WORK BECAUSE OF FW-RULES
-
-# You are only able to HTTP access the external IP address of the blue server as the allow-http-web-server only applies to VM instances with the web-server tag.
 ```
+## Step 5 Check connectivity between VMs
 
-## Create a service account with IAM roles
-- Network Admin: Permissions to create, modify, and delete networking resources, except for firewall rules and SSL certificates.
-- Security Admin: Permissions to create, modify, and delete firewall rules and SSL certificates.
 ```bash
-# ssh connect
-gcloud compute ssh --zone "europe-west1-b" "test-vm"  --project "yuyatinnefeld-dev"
+# ssh connect mynet-us-vm
+gcloud compute ssh --zone "us-central1-f" "mynet-us-vm"  --project "yuyatinnefeld-dev"
 
-# list all firewall rules > permission error
-gcloud compute firewall-rules list
+# connect external ip
+export MYNET_EU_EXTERNAL_IP=35.241.143.110
+export MANAGEMENTNET_US_EXTERNAL_IP=34.123.130.63
 
-# try to delete a firewall-rule > permission error
-gcloud compute firewall-rules delete allow-http-web-server
+ping -c 3 $MYNET_EU_EXTERNAL_IP
+ping -c 3 $MANAGEMENTNET_US_EXTERNAL_IP
 
-# create a service 
-vi service_account.tf
+# connect internal ip
+export MYNET_EU_INTERNAL_IP=10.132.0.2
+export MANAGEMENTNET_US_INTERNAL_IP=10.130.0.2
 
-# download the service key and use the service in the vm instance
-gcloud auth activate-service-account --key-file credentials.json
+ping -c 3 $MYNET_EU_INTERNAL_IP
+ping -c 3 $MANAGEMENTNET_US_INTERNAL_IP # DONT WORK BACAUSE OF DIFFERENT VPC
 
-# test one more time
-gcloud compute firewall-rules list
+
+# ssh connect mynet-eu-vm
+gcloud compute ssh --zone "europe-west1-b" "mynet-eu-vm"  --project "yuyatinnefeld-dev"
+
+# connect external ip
+export MYNET_US_EXTERNAL_IP=34.123.130.63
+export MANAGEMENTNET_US_EXTERNAL_IP=34.123.130.63
+ping -c 3 $MYNET_US_EXTERNAL_IP
+ping -c 3 $MANAGEMENTNET_US_EXTERNAL_IP
+
+
+# connect internal ip
+export MYNET_US_INTERNAL_IP=10.128.0.2
+export MANAGEMENTNET_US_INTERNAL_IP=10.130.0.2
+
+ping -c 3 $MYNET_US_INTERNAL_IP
+ping -c 3 $MANAGEMENTNET_US_INTERNAL_IP  # DONT WORK BACAUSE OF DIFFERENT VPC
 
 ```
+
+## Step 6 Create a VM with multiple network interfaces
+vi multiple-vm.tf
+
+## Step 7 Check connectivity in multiple vm
+```bash
+# verify the interface details
+gcloud compute instances describe vm-appliance --zone=us-central1-f
+
+# ssh connect
+gcloud compute ssh --zone us-central1-f "vm-appliance"  --project "yuyatinnefeld-dev"
+
+# show network interface
+sudo ifconfig
+
+# ping
+export MYNET_US_INTERNAL_IP=10.128.0.2
+export MYNET_EU_INTERNAL_IP=10.132.0.2
+export MANAGEMENTNET_US_INTERNAL_IP=10.130.0.2
+export PRIVATENET_INTETRNAL_IP=172.16.0.2
+
+ping -c 3 $MYNET_US_INTERNAL_IP
+ping -c 3 $MYNET_EU_INTERNAL_IP # DONT WORK BECAUSE THIS WAS NOT ADDED
+ping -c 3 $MANAGEMENTNET_US_INTERNAL_IP
+ping -c 3 $PRIVATENET_INTETRNAL_IP
+
+```
+
+## Step 8 Clean up
+terraform destroy

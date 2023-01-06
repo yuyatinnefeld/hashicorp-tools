@@ -7,8 +7,9 @@ image:
 before_script:
   - rm -rf .terraform
   - terraform --version
-  - mkdir -p ./creds
-  - echo $GCP_SERVICE_ACCOUNT_KEY > ./creds/serviceaccount.json
+  - if [[ $ENVIRONMENT == "dev" ]] then export GOOGLE_APPLICATION_CREDENTIALS=${GCP_SERVICE_KEY_DEV_FILE} ; fi
+  - if [[ $ENVIRONMENT == "test" ]] then export GOOGLE_APPLICATION_CREDENTIALS=${GCP_SERVICE_KEY_TEST_FILE} ; fi
+  - if [[ $ENVIRONMENT == "prod" ]] then export GOOGLE_APPLICATION_CREDENTIALS=${GCP_SERVICE_KEY_PROD_FILE} ; fi
   - 'sed -i s"/ENVIRONMENT/$ENVIRONMENT/"g backend.tf'
   - terraform init
 
@@ -28,7 +29,6 @@ validate-dev:
   extends:
     - .validate
   variables:
-    GCP_SERVICE_ACCOUNT_KEY: $GCP_SERVICE_ACCOUNT_KEY_DEV
     ENVIRONMENT: dev
   except:
     - master

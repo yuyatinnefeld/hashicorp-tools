@@ -1,7 +1,3 @@
-locals {
-  env = var.env
-}
-
 terraform {
   required_providers {
     google = {
@@ -12,7 +8,7 @@ terraform {
 }
 
 provider "google" {
-  project = var.project
-  region  = var.region   
+  project = var.project_id
+  region  = var.region
   zone    = var.zone
 }
