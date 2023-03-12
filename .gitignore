@@ -78,3 +78,5 @@ creds
 
 #terragrunt cache
 .terragrunt-cache
+
+*.key
