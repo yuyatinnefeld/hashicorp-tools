@@ -80,3 +80,6 @@ creds
 .terragrunt-cache
 
 *.key
+
+# local vault storage
+vault/storage-data
