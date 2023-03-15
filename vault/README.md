@@ -14,3 +14,6 @@ https://developer.hashicorp.com/vault/tutorials
 
 ## Certification
 https://www.hashicorp.com/certification/vault-associate
+
+## Vault SDK
+https://developer.hashicorp.com/vault/docs/get-started/developer-qs
