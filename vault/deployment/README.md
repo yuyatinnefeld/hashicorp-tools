@@ -1,4 +1,6 @@
 # Vault in Production
 
-- ec2-instance + vault
-- gce-instance + vault
+## Deploy EC2-instance for vault
+
+
+## Deploy GCE-instance for vault
