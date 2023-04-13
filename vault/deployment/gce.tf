@@ -26,7 +26,7 @@ resource "google_compute_instance" "default" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "vault:1.13.1"
       labels = {
         my_label = "value"
       }
@@ -46,14 +46,11 @@ resource "google_compute_instance" "default" {
     }
   }
 
-  metadata = {
-    foo = "bar"
-  }
-
-  metadata_startup_script = "echo hi > /test.txt"
+  metadata_startup_script = "docker run --cap-add=IPC_LOCK -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:1234' vault"
 
   service_account {
     email  = google_service_account.gce_sa.email
     scopes = ["cloud-platform"]
   }
+
 }
