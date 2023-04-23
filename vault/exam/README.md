@@ -9,7 +9,7 @@
 ## Quick Start Vault Server
 ```bash
 vault server -dev
-export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_ADDR='https://127.0.0.1:8200'
 
 # login option 1
 export VAULT_TOKEN=hvs.xxxx
@@ -36,9 +36,9 @@ source vault.env
 
 ## 1. Authentification methods
 - There are 2 auth methods: human-based and system-based
-- The human-based auth methods are i.e. LDAP, OIDC, Github
-- The system-based auth methods are i.e. AWS, Azure, GCP, AppRole
-
+- The human-based auth methods are i.e. LDAP, OIDC, Github, Okta, userpass
+- The system-based auth methods are i.e. tokrnd, TLS, k8s, AWS, Azure, GCP, AppRole
+- Cubbyhole and Active Directory are NOT supported auth methods
 #### Basic Commands
 ```bash
 # activate auth method e.g. userpass (-path is optional)
@@ -101,6 +101,7 @@ vault token capabilities $ADMIN_TOKEN sys/policies/acl
 - Token Accessors reference to a token which can be used to perform limited actions against the token
 - 4 limited actions of token accessors: lookup token properties, lookup the capabilities of a token, renew the token, revokde the token
 - default TTL in Vault is 768h
+- Batch Token cannot be renewed up to the max TTL
 
 #### Basic Commands
 ```bash
@@ -148,6 +149,9 @@ vault token lookup $RETURNED_TOKEN
 
 # clean up token
 unset VAULT_TOKEN
+
+# renew a token
+vault token renew
 ```
 
 ## 4. Vault leases
@@ -157,6 +161,9 @@ unset VAULT_TOKEN
 vault lease lookup database/creds/readonly/xxxx...
 vault lease renew database/creds/readonly/xxxx...
 vault lease revoke database/creds/readonly/xxxx...
+
+# remove all leases 
+vault lease revoke -force xxxx
 ```
 
 ## 5. Secrets Engine
@@ -165,6 +172,8 @@ vault lease revoke database/creds/readonly/xxxx...
 - Most secrets engines can be enabled, disabled, tuned, and moved via the CLI or API. `vault secrets enable aws`
 - There are static secrets (never expire) and dynamic secrets (generated when you need them)
 - Dynamic Secrets are often used: CICD pipeline Access to Cloud Provider, Database Creds, Account for Vulnerablitiy Scanning (Cyberark)
+- Only Transform and Transit SE can encrypt and decrypt data
+- The KV secrets engine is the ONLY secrets engine that can actually store credentials in Vault
 
 #### Basic Commands
 ```bash
@@ -182,6 +191,13 @@ vault kv list secret/devops
 # get a secret
 vault kv get secret/devops/gce
 vault kv get secret/devops/run
+
+# check the kv version type
+vault secret list -detailed
+
+# fetch data
+vault kv get secret/data/xxx # kv v1
+vault kv get secret/xxx # kv v2
 
 # create a new kv secret engine
 vault secrets enable -path=yu_dev kv
@@ -265,6 +281,23 @@ vault server -config=config.hcl
 - The API is expected to be accessed over a TLS connection at all times, with a valid certificate
 - The client token must be sent as either the `X-Vault-Token:{token}` or `Authorization: Bearer {token}`
 
+```bash
+# use namespace option 1
+curl \
+--header "X-Vault-Token:xxx" \
+-request GET \
+https://vault.example.com:8200/v1/<NAME-SPACE>/secret/data/xxxx
+
+# use namespace option 1
+curl \
+--header "X-Vault-TOken:xxx" \
+--header "X-Vault-Namespace:xxx" \
+-request GET \
+https://vault.example.com:8200/v1/secret/data/xxxx
+
+```
+
+
 #### Basic Commands
 ```bash
 # authenticate to Vault via Curl
@@ -287,7 +320,7 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Client token is used for authentication of users
 - Policies are used to authorization of requests
 - Replication: In HA mode, Vault is deployed in a cluster of multiple servers (one as active primary node and the others as standby nodes)
-- Replication can be used only for Vault Enterprise version
+- MFA, replication, auto unseal with HSM can be used only for Vault Enterprise version 
 - Vault Agent is a client daemon, which provides auto-auth, api-proxy, caching, windows-service, templating
 - Vault Agent Caching (secrets caching) allows client-side caching of responses (new created tokens and secrets)
 - Client can be mapped as entities
@@ -300,13 +333,21 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Revoking a lease does not delete the actual secret data, but it prevents any further access to it
 - The PKI (Public Key Infrastructure) secret engine provides management of X.509 certificates, PKI allows for the secure storage of private keys, PKI automates certificate issuance and renewal
 - `min_decryption_version` is a configuration parameter in Transit SE that specifies the minimum version of ciphertext allowed to be decrypted data
+- you can define 'sealType', 'storage backend', 'cluster name' in the configuration file
 - lease_id can be used to renew or revoke the lease of dynamic secret
 - Telemetry: metrics, Logs (memory and CPU usage): event actions
 - Cubbyhole provides a personal secret storage space for each authenticated user
-- TOTP (Time-Based One-Time Password) secret engine is one-time passwords for two-factor authentication
+- cubbyhole secret engine is a default secrets engine
+- TOTP (Time-Based One-Time Password) secret engine is one-time passwords for MFA (two-factor authentication)
 - Plugins allows businesses to extend its functionality with solutions written by third-party providers
 - WAL stands for "Write-Ahead Log"
 - Active Directory secrets engine = secrets engine provides dynamic secrets generation for Microsoft Active Directory
+- Namespace allows "vault within a vault" architect
+- 8200: UI, 8201: TCP (Cluster) API, 8300: Server RPC, 8301: LAN 8500: Consule Interface, 8600: Consule DNS
+- update/restart of vault `cault operator step-down`
+- HashiCorp tech provides support of Consul, Filesystem, In-Memory and Raft backend
+- You can export encyption-key if the exportable flag is set as true.
+- Integrated Storage is a built-in solution that provides a highly available, durable storage backend without relying on any external systems. Integrated Storage uses the same underlying consensus protocol (RAFT) as Consul to handle cluster leadership and log management
 
 ### Replication
 - DR Replication: Disaster Recovery (DR) replication is used for disaster recovery scenarios when the primary data center goes offline or is otherwise inaccessible.
@@ -314,9 +355,9 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Global Replication: Global replication is used to keep data in sync between multiple data centers that are geographically dispersed. It helps in providing high availability and disaster recovery.
 - Regional Replication: Regional replication is used to replicate data between data centers within the same geographic region. It helps in providing faster access to data and reduced latency.
 - Multi-Datacenter Replication: Multi-Datacenter replication is a combination of regional and global replication. It helps in providing high availability, disaster recovery, and faster access to data.
+- `vault operator rekey` command creates new unseal/recovery keys as well as a new master key
 
-
-## 10. Encryption as a service
+## 10. Encryption as a service (transit SE)
 - The Transit Secrets Engine is designed specifically for the encryption and decryption of data
 - You can manage all your encryption keys and policies in one place
 - The datakey in the Transit Secrets Engine is a randomly generated encryption key
@@ -339,4 +380,7 @@ base64 --decode <<< "bXkgc2VjcmV0IGRhdGEK"
 # rotate the encryption key to replace an existing encryption key with a new key
 vault write -f transit/keys/my-key/rotate
 vault write transit/rewrap/my-key ciphertext=${ENDPOINT}
+
+# re-endrypt original data with the new version
+vaulr write transit/encrypt/xxxx v1:v2 <OLD_DATA>
 ```
