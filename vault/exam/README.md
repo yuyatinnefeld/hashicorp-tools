@@ -55,7 +55,7 @@ vault write auth/userpass/users/${USER_1} password=${PASSWORD_1} policies=policy
 vault write auth/userpass/users/${USER_2} password=${PASSWORD_2} policies=policy1,policy2
 
 # login with the user
-vault login -method=userpass username=${USER}  password=${PASSWORD} 
+vault login -method=userpass username=${USER_1}  password=${PASSWORD_1} 
 
 # list users
 vault list auth/userpass/users
