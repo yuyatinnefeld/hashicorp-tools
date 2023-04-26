@@ -9,7 +9,7 @@
 ## Quick Start Vault Server
 ```bash
 vault server -dev
-export VAULT_ADDR='https://127.0.0.1:8200'
+export VAULT_ADDR='http://127.0.0.1:8200'
 
 # login option 1
 export VAULT_TOKEN=hvs.xxxx
