@@ -20,7 +20,7 @@ vault login
 
 ## Configure Env variables
 ```bash
-export VAULT_ADDR=http://localhost:8200
+export VAULT_ADDR=https://localhost:8200
 
 # create env file
 cat <<EOT >> vault.env
