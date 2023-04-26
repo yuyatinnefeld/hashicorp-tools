@@ -37,7 +37,7 @@ source vault.env
 ## 1. Authentification methods
 - There are 2 auth methods: human-based and system-based
 - The human-based auth methods are i.e. LDAP, OIDC, Github, Okta, userpass
-- The system-based auth methods are i.e. tokrnd, TLS, k8s, AWS, Azure, GCP, AppRole
+- The system-based auth methods are i.e. Token, TLS, k8s, AWS, Azure, GCP, AppRole
 - Cubbyhole and Active Directory are NOT supported auth methods
 #### Basic Commands
 ```bash
