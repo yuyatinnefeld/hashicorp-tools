@@ -35,7 +35,7 @@ source vault.env
 ## 1. Auth methods
 - Auth Methods are responsible for authentication and identity management (policies)
 - The token auth method is responsible for creating and storing token
-- The fundamental gold of all auth mehtods is to obtain a token
+- The fundamental goal of all auth mehtods is to obtain a token
 - Each Token has an asssociated policy and a TTL
 - The token auth method can NOT be disabled
 - There are 2 auth methods: human-based and system-based
