@@ -1,31 +1,29 @@
 # How to preparate HashiCorp Certified Vault Associate
 
 ## Reference
-- https://developer.hashicorp.com/vault/docs
+- https://developer.hashicorp.com/vault/docs/concepts
 - https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-study
 - https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-review
 - https://www.udemy.com/course/hashicorp-vault/
 
 ## Quick Start Vault Server
 ```bash
-vault server -dev
-export VAULT_ADDR='http://127.0.0.1:8200'
-
+vault server -dev -dev-root-token-id root
+export VAULT_ADDR=http://127.0.0.1:8200
 # login option 1
-export VAULT_TOKEN=hvs.xxxx
+export VAULT_TOKEN=root
 
 # login option 2
-vault login
+vault login root
 ```
 
 ## Configure Env variables
 ```bash
-export VAULT_ADDR=https://localhost:8200
 
 # create env file
 cat <<EOT >> vault.env
 export VAULT_ADDR=http://localhost:8200
-export VAULT_TOKEN=hrs.xxxx
+export VAULT_TOKEN=root
 EOT
 
 # active env vars
@@ -34,11 +32,17 @@ source vault.env
 
 ## Exam Objectives
 
-## 1. Authentification methods
+## 1. Auth methods
+- Auth Methods are responsible for authentication and identity management (policies)
+- The token auth method is responsible for creating and storing token
+- The fundamental gold of all auth mehtods is to obtain a token
+- Each Token has an asssociated policy and a TTL
+- The token auth method can NOT be disabled
 - There are 2 auth methods: human-based and system-based
 - The human-based auth methods are i.e. LDAP, OIDC, Github, Okta, userpass
 - The system-based auth methods are i.e. Token, TLS, k8s, AWS, Azure, GCP, AppRole
 - Cubbyhole and Active Directory are NOT supported auth methods
+
 #### Basic Commands
 ```bash
 # activate auth method e.g. userpass (-path is optional)
@@ -89,30 +93,45 @@ vault token capabilities $ADMIN_TOKEN sys/policies/acl
 ```
 
 ## 3. Token
-- There are 2 types of token: service-token (root-token, periodic-token, orphan-token, cidr-token) start with `hvs.xxx` or batch-token with `hvb.xxx`
+- Tokens are the core method for authentication within Vault
+- There are only 3 ways to create root token: 1. `vault operator init`, 2. By using another root token, 3. `vault operator generate-root`
+- Metadata of token determines policies, ttl, max-ttl, type of token
+- There are 3 types of token: service-token start with `hvs.xxx` or batch-token with `hvb.xxx` and recovery-token with `hvr.xxx` 
+- Service-Token is e.g. root-token, periodic-token, orphan-token, cidr-token
 - Batch tokens are designed to improve the performance of applications that need to access multiple secrets at once by reducing the number of API requests needed.
 - Batch tokens have a limited lifetime and are automatically revoked by Vault after a certain period of time
 - Service tokens are stored in backend
 - Vault does not persist the batch tokens
 - Batch Tokens are encrypted binary large objects (blobs)
-- Additionally there is Recovery tokens	`hvr.xxx`, Root-Token
 - Every non-root token has a time-to-live (TTL).  When a token expires, Vault automatically revokes it
 - Orphan tokens have no parent Token
 - Token Accessors reference to a token which can be used to perform limited actions against the token
 - 4 limited actions of token accessors: lookup token properties, lookup the capabilities of a token, renew the token, revokde the token
-- default TTL in Vault is 768h
+- Default (lease) TTL in Vault is 768h (hour as default type) / 32 days
+- Default TTL (768h) can be changed in Vault's configuration file
+- You can change the default ttl in the configureation file with `default_lease_ttl = 24h`
 - Batch Token cannot be renewed up to the max TTL
+- Periodic tokens have a TTL (validity period), but NOT max TTL and is suitable for long-running app which cannot handle the regeneration. bcs you can renew this token over and over and over
+- Root or sudo user can create Periodic Token / Orphan-Token
+- Through the token-type in AppRole you can define 'batch' or 'service' token
 
 #### Basic Commands
 ```bash
-# check the current token
+# look up the properties of the current token
 vault token lookup
 
 # create a token
 vault token create
 
-# create a token with limit
-vault token create -ttl=1h -use-limit=2 -policy=default
+# create a periodic token with limit (same result)
+vault token create -policy=xxx -period=24h
+vault token create -policy=xxx -ttl=24h -explicit_mex_ttl=0
+
+# create a use limit token
+vault token create -policy=xxx -use-limit=2 
+
+# create a orphan token
+vault token create -policy=xxx -orphan
 
 # create a token with limit
 vault token create -use-limit=10 -policy="default" -period=24h -format=json \
@@ -152,9 +171,15 @@ unset VAULT_TOKEN
 
 # renew a token
 vault token renew
+
+# endpoint of create orphan token
+auth/token/create-orphan
+
+# endpoint of remove orphan token
+auth/token/revoke-orphan
 ```
 
-## 4. Vault leases
+## 4. Vault lease
 
 #### Basic Commands
 ```bash
@@ -162,9 +187,19 @@ vault lease lookup database/creds/readonly/xxxx...
 vault lease renew database/creds/readonly/xxxx...
 vault lease revoke database/creds/readonly/xxxx...
 
+# revoke all AWS access keys
+vault lease revoke -prefix aws/
+
 # remove all leases 
 vault lease revoke -force xxxx
 ```
+- Leases are a fundamental concept that refer to the duration of time that a piece of data, such as a secret or token, is valid
+- Lease is metadata containing information such as a time duration, renewability, and more
+- With every dynamic secret and service type authentication token, Vault creates a lease
+- Once the lease is expired, Vault can automatically revoke the data, secrets
+- lease_id is used to manage (renew / revoke) the lease of the dynamic secret e.g. `vault lease renew <my-lease-id>` and `vault lease revoke <my-lease-id>`
+- Lease in Vault provides a time-limited authorization to access a resource or to generate a dynamic credential
+
 
 ## 5. Secrets Engine
 - Secrets engines are components which store, generate, or encrypt data.
@@ -174,11 +209,19 @@ vault lease revoke -force xxxx
 - Dynamic Secrets are often used: CICD pipeline Access to Cloud Provider, Database Creds, Account for Vulnerablitiy Scanning (Cyberark)
 - Only Transform and Transit SE can encrypt and decrypt data
 - The KV secrets engine is the ONLY secrets engine that can actually store credentials in Vault
+- KV v1 endpoint KV `secret/key_path` and v2 endpoint `secret/data/key_path`
+- KV v2 can store version of secrets and has metadata
 
 #### Basic Commands
 ```bash
 # list all secret engine
 vault secrets list
+
+# enable kv se with v1
+vault secrets enable -path="kv" kv
+
+# enable kv se with v2
+vault secrets enable -path="kv" kv-v2
 
 # create secrets
 vault kv put -mount=secret devops/gce password=super_password
@@ -269,31 +312,66 @@ mkdir -p vault/data
 # run vault server
 vault server -config=config.hcl
 
-# authenticate to Vault
-# configure authentication methods
-# configure Vault policies
-# access Vault secrets
-# enable Secret engines
 ```
 
 ## 8. HTTP API
 - All API routes are prefixed with `/v1/`
 - The API is expected to be accessed over a TLS connection at all times, with a valid certificate
 - The client token must be sent as either the `X-Vault-Token:{token}` or `Authorization: Bearer {token}`
+- You need to use metadata path for listing for kv v2 secrets
 
 ```bash
-# use namespace option 1
+# create kv v1 engine
+vault secrets enable -path=kv-1 -version=1 kv
+
+curl \
+  -H "X-Vault-Token: root" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"data":{"value":"bar"}}' \
+  http://127.0.0.1:8200/v1/kv-1/key-for-se-v1
+
+curl \
+    -H "X-Vault-Token: root" \
+    -X LIST \
+    http://127.0.0.1:8200/v1/kv-1/
+
+# create kv v2 engine
+vault secrets enable -path=kv-2 -version=2 kv
+
+curl \
+  -H "X-Vault-Token: root" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"data":{"value":"bar"}}' \
+  http://127.0.0.1:8200/v1/kv-2/data/key-for-se-v2-111
+
+curl \
+  -H "X-Vault-Token: root" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"data":{"value":"bar"}}' \
+  http://127.0.0.1:8200/v1/kv-2/data/key-for-se-v2-222
+
+curl \
+    -H "X-Vault-Token: root" \
+    -X LIST \
+    http://127.0.0.1:8200/v1/kv-2/metadata
+
+### namespace is just for enterprise
+
+# kv2 use namespace option 1
 curl \
 --header "X-Vault-Token:xxx" \
 -request GET \
 https://vault.example.com:8200/v1/<NAME-SPACE>/secret/data/xxxx
 
-# use namespace option 1
+# kv2 use namespace option 1
 curl \
---header "X-Vault-TOken:xxx" \
---header "X-Vault-Namespace:xxx" \
+--header "X-Vault-TOken:root" \
+--header "X-Vault-Namespace:kv-2" \
 -request GET \
-https://vault.example.com:8200/v1/secret/data/xxxx
+http://127.0.0.1:8200/v1/data/key-for-se-v2-222
 
 ```
 
@@ -312,6 +390,9 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Data is written encrpted into the storage backend (file system, in-memory, cloud-based services, and databases such as MySQL, PostgreSQL, and Cassandra)
 - File System are easy to setup, Cloud-based backends provide HA and scalability, DB provides strong consistency and durability.
 - When a Vault server is started, it begins in a sealed state. Before any operation can be performed on Vault, it must be unsealed
+- The unseal process is done by running vault operator unseal or via the API
+- via API  `curl http://.../v1/sys/unseal --request ...`
+- Auto Unseal: the seal provider (HSM or cloud KMS) must be available throughout Vault's runtime and not just during the unseal process
 - If vault has sealed state then the master key is encrypted and locked
 - The master key is used to decrypt the encryption key > Encyption key can unencrypt the data on the storage backend
 - Master key (encrption key) is used to protect all vault data.
@@ -320,7 +401,7 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Client token is used for authentication of users
 - Policies are used to authorization of requests
 - Replication: In HA mode, Vault is deployed in a cluster of multiple servers (one as active primary node and the others as standby nodes)
-- MFA, replication, auto unseal with HSM can be used only for Vault Enterprise version 
+- MFA, replication, namespaces, DR, HSM auto-unseal can be used only for Vault Enterprise version 
 - Vault Agent is a client daemon, which provides auto-auth, api-proxy, caching, windows-service, templating
 - Vault Agent Caching (secrets caching) allows client-side caching of responses (new created tokens and secrets)
 - Client can be mapped as entities
@@ -334,20 +415,20 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - The PKI (Public Key Infrastructure) secret engine provides management of X.509 certificates, PKI allows for the secure storage of private keys, PKI automates certificate issuance and renewal
 - `min_decryption_version` is a configuration parameter in Transit SE that specifies the minimum version of ciphertext allowed to be decrypted data
 - you can define 'sealType', 'storage backend', 'cluster name' in the configuration file
-- lease_id can be used to renew or revoke the lease of dynamic secret
 - Telemetry: metrics, Logs (memory and CPU usage): event actions
 - Cubbyhole provides a personal secret storage space for each authenticated user
-- cubbyhole secret engine is a default secrets engine
+- Cubbyhole secret engine is a default secrets engine which is only accessible to the token that writes to it
 - TOTP (Time-Based One-Time Password) secret engine is one-time passwords for MFA (two-factor authentication)
 - Plugins allows businesses to extend its functionality with solutions written by third-party providers
 - WAL stands for "Write-Ahead Log"
 - Active Directory secrets engine = secrets engine provides dynamic secrets generation for Microsoft Active Directory
 - Namespace allows "vault within a vault" architect
-- 8200: UI, 8201: TCP (Cluster) API, 8300: Server RPC, 8301: LAN 8500: Consule Interface, 8600: Consule DNS
-- update/restart of vault `cault operator step-down`
+- 8200: UI TCP, 8201: Cluster API TCP, 8300: Server RPC, 8301: LAN 8500: Consule Interface, 8600: Consule DNS
+- Update/restart of vault server `vault operator step-down`
 - HashiCorp tech provides support of Consul, Filesystem, In-Memory and Raft backend
 - You can export encyption-key if the exportable flag is set as true.
 - Integrated Storage is a built-in solution that provides a highly available, durable storage backend without relying on any external systems. Integrated Storage uses the same underlying consensus protocol (RAFT) as Consul to handle cluster leadership and log management
+- `vault operator rekey` command creates new unseal/recovery keys as well as a new master key
 
 ### Replication
 - DR Replication: Disaster Recovery (DR) replication is used for disaster recovery scenarios when the primary data center goes offline or is otherwise inaccessible.
@@ -355,12 +436,14 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Global Replication: Global replication is used to keep data in sync between multiple data centers that are geographically dispersed. It helps in providing high availability and disaster recovery.
 - Regional Replication: Regional replication is used to replicate data between data centers within the same geographic region. It helps in providing faster access to data and reduced latency.
 - Multi-Datacenter Replication: Multi-Datacenter replication is a combination of regional and global replication. It helps in providing high availability, disaster recovery, and faster access to data.
-- `vault operator rekey` command creates new unseal/recovery keys as well as a new master key
 
 ## 10. Encryption as a service (transit SE)
 - The Transit Secrets Engine is designed specifically for the encryption and decryption of data
 - You can manage all your encryption keys and policies in one place
 - The datakey in the Transit Secrets Engine is a randomly generated encryption key
+- Transit and Transform secrets engines deal with encryption and decryption
+- Transit is used for data at rest, while Transform is used for data-in-motion
+- All plaintext data must be base64-encoded by Transit SE
 
 ```bash
 # configure transit secret engine
