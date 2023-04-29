@@ -83,3 +83,6 @@ creds
 
 # local vault storage
 vault/storage-data
+
+# aws key
+keypair.pem
