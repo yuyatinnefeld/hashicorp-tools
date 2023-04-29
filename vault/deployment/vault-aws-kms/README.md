@@ -1,6 +1,6 @@
 # Vault + AWS auto-unseal with KMS
 
-## sources:
+## Sources:
 - https://github.com/hashicorp/vault-guides/blob/master/identity/vault-agent-demo/README.md
 
 ## How to guide:
