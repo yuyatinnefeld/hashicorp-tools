@@ -75,4 +75,9 @@ vault list sys/leases/lookup/database/creds/readonly
 LEASE_ID=$(vault list -format=json sys/leases/lookup/database/creds/readonly | jq -r ".[0]")
 echo $LEASE_ID
 
+# renew lease
+vault lease renew database/creds/readonly/$LEASE_ID
+
+# revoke lease
+vault lease revoke database/creds/readonly/$LEASE_ID
 ```
