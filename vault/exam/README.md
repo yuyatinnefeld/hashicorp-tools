@@ -37,11 +37,14 @@ source vault.env
 - The token auth method is responsible for creating and storing token
 - The fundamental goal of all auth mehtods is to obtain a token
 - Each Token has an asssociated policy and a TTL
-- The token auth method can NOT be disabled
+- The default TOKEN auth method can NOT be disabled but another auth methods can be enabled/disabled using the CLI or the API.
 - There are 2 auth methods: human-based and system-based
 - The human-based auth methods are i.e. LDAP, OIDC, Github, Okta, userpass
 - The system-based auth methods are i.e. Token, TLS, k8s, AWS, Azure, GCP, AppRole
 - Cubbyhole and Active Directory are NOT supported auth methods
+- The jwt auth method can be used to authenticate with Vault using OIDC or by providing a JWT (e.g. kubernetes)
+- entity and alias are used identity serets engine
+- An entity can be manually created to map multiple entities as alias (e.g. a user has LDAP, Github, UserPass access and different permissions)
 
 #### Basic Commands
 ```bash
@@ -114,6 +117,9 @@ vault token capabilities $ADMIN_TOKEN sys/policies/acl
 - Periodic tokens have a TTL (validity period), but NOT max TTL and is suitable for long-running app which cannot handle the regeneration. bcs you can renew this token over and over and over
 - Root or sudo user can create Periodic Token / Orphan-Token
 - Through the token-type in AppRole you can define 'batch' or 'service' token
+
+
+
 
 #### Basic Commands
 ```bash
@@ -207,7 +213,6 @@ vault lease revoke -force xxxx
 - Most secrets engines can be enabled, disabled, tuned, and moved via the CLI or API. `vault secrets enable aws`
 - There are static secrets (never expire) and dynamic secrets (generated when you need them)
 - Dynamic Secrets are often used: CICD pipeline Access to Cloud Provider, Database Creds, Account for Vulnerablitiy Scanning (Cyberark)
-- Only Transform and Transit SE can encrypt and decrypt data
 - The KV secrets engine is the ONLY secrets engine that can actually store credentials in Vault
 - KV v1 endpoint KV `secret/key_path` and v2 endpoint `secret/data/key_path`
 - KV v2 can store version of secrets and has metadata
@@ -393,9 +398,9 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - The unseal process is done by running vault operator unseal or via the API
 - via API  `curl http://.../v1/sys/unseal --request ...`
 - Auto Unseal: the seal provider (HSM or cloud KMS) must be available throughout Vault's runtime and not just during the unseal process
-- If vault has sealed state then the master key is encrypted and locked
-- The master key is used to decrypt the encryption key > Encyption key can unencrypt the data on the storage backend
-- Master key (encrption key) is used to protect all vault data.
+- If vault has sealed state then the master /root key is encrypted and locked
+- The master / root key is used to decrypt the encryption key > Encyption key can unencrypt the data on the storage backend
+- Root key is used to protect all vault data.
 - `vault operator init` is the process by which Vault's storage backend is prepared to receive data. Vault generates an in-memory master key and applies shamirs secret sharing algorithm
 - Policies are just a named ACL rule
 - Client token is used for authentication of users
@@ -413,7 +418,6 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Dynamic secrets are generated on-demand. They are not stored or managed for an extended period, which significantly reduces the risk of exposure to malicious actors
 - Revoking a lease does not delete the actual secret data, but it prevents any further access to it
 - The PKI (Public Key Infrastructure) secret engine provides management of X.509 certificates, PKI allows for the secure storage of private keys, PKI automates certificate issuance and renewal
-- `min_decryption_version` is a configuration parameter in Transit SE that specifies the minimum version of ciphertext allowed to be decrypted data
 - you can define 'sealType', 'storage backend', 'cluster name' in the configuration file
 - Telemetry: metrics, Logs (memory and CPU usage): event actions
 - Cubbyhole provides a personal secret storage space for each authenticated user
@@ -438,31 +442,57 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Multi-Datacenter Replication: Multi-Datacenter replication is a combination of regional and global replication. It helps in providing high availability, disaster recovery, and faster access to data.
 
 ## 10. Encryption as a service (transit SE)
-- The Transit Secrets Engine is designed specifically for the encryption and decryption of data
+- Transit SE provides functions for encrypting/decrypting data
+- Application can send cleartext data to Vault and Vault encrypts using the specified key and return ciphertext to the app
+- The App NEVER has access to the encryption key (stored in Vault)
+- Only Transform and Transit SE can encrypt and decrypt data
+- Transit SE does NOT store the data
 - You can manage all your encryption keys and policies in one place
 - The datakey in the Transit Secrets Engine is a randomly generated encryption key
-- Transit and Transform secrets engines deal with encryption and decryption
 - Transit is used for data at rest, while Transform is used for data-in-motion
 - All plaintext data must be base64-encoded by Transit SE
+- base64-encoding is NOT encryption and is just for the file format to make able to use Transit SE
+- `min_decryption_version` is a configuration parameter in Transit SE that specifies the minimum version of ciphertext allowed to be decrypted data
+- Apps which use Transit SE need to have permission to use the key for encyption / decryption operation
+- your data is encrypted with AES-GCM with a 256-bit AES key or other supported key types
+- Transit SE supports convertion encryption mode so that the result (ciphertext) is every time same if the same data is encrypted to make searching of ciphertext easier
+- Key rotation is the process of retiring an encryption key and replacing it with a new encryption key, Encryption keys are not infinite
+- You can rote keys manually, auto-rotation of vault or external automated process
+- aes256-gcm96 is default encryption key type
 
 ```bash
 # configure transit secret engine
 vault secrets enable transit
+
+# create encryption key
 vault write -f transit/keys/my-key
 
-# encrypt secrets
-vault write transit/encrypt/my-key plaintext=$(echo "my secret data" | base64)
+# encode data
+PLAIN_TEXT=$(base64 <<< "my secret data")
+echo ${PLAIN_TEXT}
 
-# decrypt secrets
-export ENDPOINT=vault:v1:UoVV6pfWnH0BXf67pLiiKZx8rW6jNSRNZoQktMaPu5h6u4/a2sLNxasOBA==
-vault write transit/decrypt/my-key ciphertext=${ENDPOINT}
+# encrypt data
+vault write transit/encrypt/my-key plaintext=${PLAIN_TEXT}
+
+# decrypt data
+export CIPHER_TEXT=vault:v1:7tVAOSAWKnEdawRBQY0FenFuOkU9IJ7yplLcTojkNHt82kJomNBJ1QcRYQ==
+vault write transit/decrypt/my-key ciphertext=${CIPHER_TEXT}
 
 # read the file
 base64 --decode <<< "bXkgc2VjcmV0IGRhdGEK"
 
 # rotate the encryption key to replace an existing encryption key with a new key
 vault write -f transit/keys/my-key/rotate
-vault write transit/rewrap/my-key ciphertext=${ENDPOINT}
+
+# verify
+vault read transit/keys/my-key
+
+# update with min decryption version
+vault write transit/keys/my-key/config min_decryption_version=2
+vault read transit/keys/my-key
+
+# rewrap data 
+vault write transit/rewrap/my-key ciphertext=${CIPHER_TEXT}
 
 # re-endrypt original data with the new version
 vaulr write transit/encrypt/xxxx v1:v2 <OLD_DATA>
