@@ -19,8 +19,12 @@ vault write aws/config/root \
     secret_key=???/??? \
     region=us-east-1
 
-# create a role
-vault write aws/roles/my-role \
+# verify the root creds
+vault read aws/config/root
+
+
+# create a ec2 role
+vault write aws/roles/ec2-role \
 credential_type=iam_user \
 policy_document=-<<EOF
     {
@@ -42,9 +46,16 @@ EOF
 
 
 # verify
-vault read aws/roles/my-role
+vault read aws/roles/ec2-role
 
 # generate a dynamic secret
-vault read aws/creds/my-role
+vault read aws/creds/ec2-role
 
+vault write aws/roles/readonly-role \
+policy_arns=arn:aws:iam::aws:policy/ReadOnlyAccess \
+credential_type=iam_user
+
+vault read aws/roles/readonly-role
+
+vault read aws/creds/readonly-role
 ```
