@@ -1,6 +1,6 @@
 # AWS + Vault
 
-## Setup Vault
+## Setup Vault AWS Auth Method
 ```bash
 vault server -dev -dev-root-token-id root
 
@@ -21,8 +21,11 @@ vault write aws/config/root \
 
 # verify the root creds
 vault read aws/config/root
+```
 
 
+## Create EC2 Dynamic Creds
+```bash
 # create a ec2 role
 vault write aws/roles/ec2-role \
 credential_type=iam_user \
@@ -44,13 +47,17 @@ policy_document=-<<EOF
     }
 EOF
 
-
 # verify
 vault read aws/roles/ec2-role
 
-# generate a dynamic secret
+# generate a dynamic secret for ec2 user
 vault read aws/creds/ec2-role
+```
 
+## Create EC2 ReadOnly Creds
+
+
+```bash
 vault write aws/roles/readonly-role \
 policy_arns=arn:aws:iam::aws:policy/ReadOnlyAccess \
 credential_type=iam_user
