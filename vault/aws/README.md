@@ -52,6 +52,10 @@ vault read aws/roles/ec2-role
 
 # generate a dynamic secret for ec2 user
 vault read aws/creds/ec2-role
+
+# delete the user
+LEASE_ID="aws/creds/ec2-role/jWl58nfsLhpSpFbw17i2LED0"
+vault lease revoke ${LEASE_ID}
 ```
 
 ## Create EC2 ReadOnly Creds
@@ -65,4 +69,23 @@ credential_type=iam_user
 vault read aws/roles/readonly-role
 
 vault read aws/creds/readonly-role
+
+
+# delete the user
+LEASE_ID="aws/creds/readonly-role/50sUZKCWT3cT9vl3xClWyGCj"
+vault lease revoke ${LEASE_ID}
+```
+
+## Revoke AWS Creds with Prefix
+
+```bash
+# create a few creds
+vault read aws/creds/readonly-role
+vault read aws/creds/readonly-role
+vault read aws/creds/ec2-role
+vault read aws/creds/ec2-role
+
+vault lease revoke -prefix aws
+vault lease revoke -prefix aws/creds
+
 ```
