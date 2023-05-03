@@ -2,6 +2,7 @@
 
 ## Reference
 - https://developer.hashicorp.com/vault/docs/concepts
+- https://developer.hashicorp.com/vault/tutorials/tokens
 - https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-study
 - https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-review
 - https://www.udemy.com/course/hashicorp-vault/
@@ -118,20 +119,24 @@ vault token capabilities $ADMIN_TOKEN sys/policies/acl
 - Root or sudo user can create Periodic Token / Orphan-Token
 - Through the token-type in AppRole you can define 'batch' or 'service' token
 
-
-
-
 #### Basic Commands
 ```bash
+# list all tokens
+vault list auth/token/accessors
+
+# check the details
+vault token lookup -accessor <accessor_id>
+vault token lookup -format json -accessor <accessor_id>
+
 # look up the properties of the current token
 vault token lookup
 
 # create a token
 vault token create
 
-# create a periodic token with limit (same result)
-vault token create -policy=xxx -period=24h
-vault token create -policy=xxx -ttl=24h -explicit_mex_ttl=0
+# create a periodic token
+vault token create -policy=xxx -period=24h # option 1
+vault token create -policy=xxx -ttl=24h -explicit-max-ttl=0 # option 2
 
 # create a use limit token
 vault token create -policy=xxx -use-limit=2 
@@ -208,14 +213,17 @@ vault lease revoke -force xxxx
 
 
 ## 5. Secrets Engine
-- Secrets engines are components which store, generate, or encrypt data.
+- Secrets engines are components which store, generate, or encrypt data and plugin that extend the functionality
+- Secrets engines are enabled and isolated at a path
 - Secrets engines are enabled at a path in Vault
+- Cubbyhole and Identity are enabled by default and can NOT disable
 - Most secrets engines can be enabled, disabled, tuned, and moved via the CLI or API. `vault secrets enable aws`
 - There are static secrets (never expire) and dynamic secrets (generated when you need them)
 - Dynamic Secrets are often used: CICD pipeline Access to Cloud Provider, Database Creds, Account for Vulnerablitiy Scanning (Cyberark)
 - The KV secrets engine is the ONLY secrets engine that can actually store credentials in Vault
 - KV v1 endpoint KV `secret/key_path` and v2 endpoint `secret/data/key_path`
 - KV v2 can store version of secrets and has metadata
+- You can upgrade kv-v1 to kv-v2 with `vault kv enable-versioning xxx/xxx`
 
 #### Basic Commands
 ```bash
@@ -323,71 +331,78 @@ vault server -config=config.hcl
 - All API routes are prefixed with `/v1/`
 - The API is expected to be accessed over a TLS connection at all times, with a valid certificate
 - The client token must be sent as either the `X-Vault-Token:{token}` or `Authorization: Bearer {token}`
-- You need to use metadata path for listing for kv v2 secrets
+- You need to use two prefiex `metadata` and `data` for kv v2 secrets engine for API
+
+#### Basic Commands
 
 ```bash
 # create kv v1 engine
-vault secrets enable -path=kv-1 -version=1 kv
-
 curl \
-  -H "X-Vault-Token: root" \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    --request POST \
+    --data '{"type": "kv-v1"}' \
+    http://127.0.0.1:8200/v1/sys/mounts/kv-v1
+
+# save a secret into kv-v1 engine
+curl \
+  -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
   -d '{"data":{"value":"bar"}}' \
-  http://127.0.0.1:8200/v1/kv-1/key-for-se-v1
+  http://127.0.0.1:8200/v1/kv-v1/key-for-se-v1
 
+# list all secrets
 curl \
-    -H "X-Vault-Token: root" \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
     -X LIST \
-    http://127.0.0.1:8200/v1/kv-1/
+    http://127.0.0.1:8200/v1/kv-v1/
 
 # create kv v2 engine
-vault secrets enable -path=kv-2 -version=2 kv
+curl \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    --request POST \
+    --data '{"type": "kv-v2"}' \
+    http://127.0.0.1:8200/v1/sys/mounts/kv-v2
 
 curl \
-  -H "X-Vault-Token: root" \
+  -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
   -d '{"data":{"value":"bar"}}' \
-  http://127.0.0.1:8200/v1/kv-2/data/key-for-se-v2-111
+  http://127.0.0.1:8200/v1/kv-v2/data/key-for-se-v2-111
 
 curl \
-  -H "X-Vault-Token: root" \
+  -H "X-Vault-Token: $VAULT_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
   -d '{"data":{"value":"bar"}}' \
-  http://127.0.0.1:8200/v1/kv-2/data/key-for-se-v2-222
+  http://127.0.0.1:8200/v1/kv-v2/data/key-for-se-v2-222
 
 curl \
-    -H "X-Vault-Token: root" \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
     -X LIST \
-    http://127.0.0.1:8200/v1/kv-2/metadata
+    http://127.0.0.1:8200/v1/kv-v2/metadata
 
 ### namespace is just for enterprise
 
 # kv2 use namespace option 1
 curl \
---header "X-Vault-Token:xxx" \
--request GET \
-https://vault.example.com:8200/v1/<NAME-SPACE>/secret/data/xxxx
+  --header "X-Vault-Token:$VAULT_TOKEN" \
+  -request GET \
+  http://127.0.0.1:8200/v1/<NAME-SPACE>/secret/data/xxxx
 
 # kv2 use namespace option 1
 curl \
---header "X-Vault-TOken:root" \
---header "X-Vault-Namespace:kv-2" \
--request GET \
-http://127.0.0.1:8200/v1/data/key-for-se-v2-222
+  --header "X-Vault-TOken:$VAULT_TOKEN" \
+  --header "X-Vault-Namespace:kv-2" \
+  -request GET \
+  http://127.0.0.1:8200/v1/data/key-for-se-v2-222
 
-```
-
-
-#### Basic Commands
-```bash
 # authenticate to Vault via Curl
-curl -H "X-Vault-Token: <TOKEN>" -X LIST http://127.0.0.1:8200/v1/secret/
+curl -H "X-Vault-Token: $VAULT_TOKEN" -X LIST http://127.0.0.1:8200/v1/secret/
 
 # access Vault secrets via Curl
-curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-test
+curl -H "X-Vault-Token: $VAULT_TOKEN" -X GET http://127.0.0.1:8200/v1/secret/hello-test
 ```
 
 ## 9. Vault architecture
@@ -427,11 +442,16 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - WAL stands for "Write-Ahead Log"
 - Active Directory secrets engine = secrets engine provides dynamic secrets generation for Microsoft Active Directory
 - Namespace allows "vault within a vault" architect
-- 8200: UI TCP, 8201: Cluster API TCP, 8300: Server RPC, 8301: LAN 8500: Consule Interface, 8600: Consule DNS
+- 8200: UI TCP
+- 8201: Cluster Replication TCP
+- 8300: Server RPC
+- 8301: LAN 
+- 8500: Consul Interface
+- 8600: Consul DNS
 - Update/restart of vault server `vault operator step-down`
 - HashiCorp tech provides support of Consul, Filesystem, In-Memory and Raft backend
 - You can export encyption-key if the exportable flag is set as true.
-- Integrated Storage is a built-in solution that provides a highly available, durable storage backend without relying on any external systems. Integrated Storage uses the same underlying consensus protocol (RAFT) as Consul to handle cluster leadership and log management
+
 - `vault operator rekey` command creates new unseal/recovery keys as well as a new master key
 
 ### Replication
@@ -440,6 +460,48 @@ curl -H "X-Vault-Token: <TOKEN>" -X GET http://127.0.0.1:8200/v1/secret/hello-te
 - Global Replication: Global replication is used to keep data in sync between multiple data centers that are geographically dispersed. It helps in providing high availability and disaster recovery.
 - Regional Replication: Regional replication is used to replicate data between data centers within the same geographic region. It helps in providing faster access to data and reduced latency.
 - Multi-Datacenter Replication: Multi-Datacenter replication is a combination of regional and global replication. It helps in providing high availability, disaster recovery, and faster access to data.
+- Integrated Storage is a built-in / INTERNAL solution that provides a highly available, durable storage backend without relying on any external systems
+- Integrated Storage uses the same underlying consensus protocol (RAFT) as Consul to handle cluster leadership and log management
+
+##### Auto Join
+```bash
+storage "raft" {
+  path    = "/var/raft/"
+  node_id = "node3"
+
+  retry_join {
+    auto_join = "provider=aws region=eu-west-1 tag_key=vault tag_value=... access_key_id=... secret_access_key=..."
+  }
+}
+```
+
+##### Retry Join
+
+```bash
+storage "raft" {
+  path    = "/var/raft/"
+  node_id = "node3"
+
+  retry_join {
+    leader_api_addr = "https://node1.vault.local:8200"
+  }
+  retry_join {
+    leader_api_addr = "https://node2.vault.local:8200"
+  }
+}
+```
+
+```bash
+# manually join
+vault operator raf join https://<active_node>.example.com:8200
+
+# list the cluster member of raft nodes
+vault operator raft list-peers
+
+# remove peering
+vault operator raft remove-peer node1
+```
+
 
 ## 10. Encryption as a service (transit SE)
 - Transit SE provides functions for encrypting/decrypting data
@@ -491,9 +553,6 @@ vault read transit/keys/my-key
 vault write transit/keys/my-key/config min_decryption_version=2
 vault read transit/keys/my-key
 
-# rewrap data 
-vault write transit/rewrap/my-key ciphertext=${CIPHER_TEXT}
-
-# re-endrypt original data with the new version
-vaulr write transit/encrypt/xxxx v1:v2 <OLD_DATA>
+# re-encrypt original data with the new version
+vault write transit/rewrap/my-key ciphertext=<old-data>
 ```
