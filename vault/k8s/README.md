@@ -71,33 +71,9 @@ export TEST_TOKEN=$SERVICE_TOKEN
 
 ## Demo with token
 ```bash
-# test token
-curl -k $KUBE_HOST/api/v1/namespaces/demo/pods --header "Authorization: Bearer $TEST_TOKEN"
+# examine the payload of the JWT.
+vault write -field=service_account_token kubernetes/creds/sample-app kubernetes_namespace=demo \
+  | jwt decode - 
 
-# remove token
-vault lease revoke -prefix kubernetes/creds/rules
 
-# verify again
-curl -k $KUBE_HOST/api/v1/namespaces/demo/pods --header "Authorization: Bearer $TEST_TOKEN"
-
-# update role
-vault write kubernetes/roles/rules \
-      allowed_kubernetes_namespaces=default \
-      allowed_kubernetes_namespaces=demo \
-      kubernetes_role_type=ClusterRole \
-      token_max_ttl=80h \
-      token_default_ttl=1h \
-      generated_role_rules='{"rules":[{"apiGroups":[""],"resources":["pods"],"verbs":["list","get","delete"]}]}'
-
-# get test-token
-export TEST_TOKEN=$(vault write -field=service_account_token kubernetes/creds/rules kubernetes_namespace=demo cluster_role_binding=true)
-
-# delete pods with token
-curl -k -X DELETE $KUBE_HOST/api/v1/namespaces/demo/pods/nginx --header "Authorization: Bearer $TEST_TOKEN"
-
-# verify pod deleted
-curl -k $KUBE_HOST/api/v1/namespaces/demo/pods/ --header "Authorization: Bearer $TEST_TOKEN"
-
-# clean up
-minikube delete
 ```
