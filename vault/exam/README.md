@@ -1,10 +1,11 @@
 # How to preparate HashiCorp Certified Vault Associate
 
 ## Reference
+- https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-study
+- https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-questions
+- https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-review
 - https://developer.hashicorp.com/vault/docs/concepts
 - https://developer.hashicorp.com/vault/tutorials/tokens
-- https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-study
-- https://developer.hashicorp.com/vault/tutorials/associate-cert/associate-review
 - https://www.udemy.com/course/hashicorp-vault/
 
 ## Quick Start Vault Server
@@ -50,7 +51,11 @@ source vault.env
 #### Basic Commands
 ```bash
 # activate auth method e.g. userpass (-path is optional)
-vault auth enable userpass
+vault auth enable -path=userpass userpass
+
+# option B
+vault write sys/auth/userpass type=userpass
+
 # list up all auth
 vault auth list
 
@@ -431,6 +436,7 @@ curl -H "X-Vault-Token: $VAULT_TOKEN" -X GET http://127.0.0.1:8200/v1/secret/hel
 - Response wrapping allows users to perform an action and receive a wrapped response token instead of an immediate response
 - Warpping response has the following benefits: limit the time of secret exposure, only the reference to the secrets in transmitted
 - Dynamic secrets are generated on-demand. They are not stored or managed for an extended period, which significantly reduces the risk of exposure to malicious actors
+- `period=xxh` is used to set a fixed duration for the token's TTL. This means that the token will be automatically renewed every period duration until it is revoked or expires
 - Revoking a lease does not delete the actual secret data, but it prevents any further access to it
 - The PKI (Public Key Infrastructure) secret engine provides management of X.509 certificates, PKI allows for the secure storage of private keys, PKI automates certificate issuance and renewal
 - you can define 'sealType', 'storage backend', 'cluster name' in the configuration file
@@ -451,7 +457,7 @@ curl -H "X-Vault-Token: $VAULT_TOKEN" -X GET http://127.0.0.1:8200/v1/secret/hel
 - Update/restart of vault server `vault operator step-down`
 - HashiCorp tech provides support of Consul, Filesystem, In-Memory and Raft backend
 - You can export encyption-key if the exportable flag is set as true.
-
+- Only In-memory, Raft, Filesystem, Consule are supported Storage Backend by Vault
 - `vault operator rekey` command creates new unseal/recovery keys as well as a new master key
 
 ### Replication
@@ -462,7 +468,9 @@ curl -H "X-Vault-Token: $VAULT_TOKEN" -X GET http://127.0.0.1:8200/v1/secret/hel
 - Multi-Datacenter Replication: Multi-Datacenter replication is a combination of regional and global replication. It helps in providing high availability, disaster recovery, and faster access to data.
 - Integrated Storage is a built-in / INTERNAL solution that provides a highly available, durable storage backend without relying on any external systems
 - Integrated Storage uses the same underlying consensus protocol (RAFT) as Consul to handle cluster leadership and log management
-
+- Design Goals of Replication: HA, Conflict Free, Transparent to Clients, Simple to Operate
+- Replication uses this to maintain a Write-Ahead-Log (WAL) of all updates, so that the key update happens atomically with the WAL entry creation.
+- Data location of Raft = DISK, Consul = MEMORY
 ##### Auto Join
 ```bash
 storage "raft" {
