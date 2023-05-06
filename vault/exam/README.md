@@ -79,7 +79,7 @@ vault list auth/userpass/users
 - Declarative rules for deny and grant access to paths
 - Deny by default (no policy = no permission)
 - Root policy permits access to all components
-- Capabilities can be used in a policy (CRUD) + list, sudo, deny
+- Capabilities can be used in a policy (CRUD) + patch, list, sudo, deny
 - There are root-protected paths (e.g. sys/ auth/, identity/, secret/, etc.)
 
 ```bash
@@ -91,6 +91,9 @@ vault policy write yu-admin admin-policy.hcl
 
 # show deteils of a policy
 vault policy read yu-admin
+
+# list policies
+vault read sys/policy
 
 # check token capabilities
 ADMIN_TOKEN=$(vault token create -format=json -policy="yu-admin" | jq -r ".auth.client_token")
@@ -197,6 +200,13 @@ auth/token/revoke-orphan
 
 ## 4. Vault lease
 
+- Leases are a fundamental concept that refer to the duration of time that a piece of data, such as a secret or token, is valid
+- Lease is metadata containing information such as a time duration, renewability, and more
+- With every `dynamic secret` and `service type` authentication token, Vault creates a lease
+- Once the lease is expired, Vault can automatically revoke the data, secrets
+- lease_id is used to manage (renew / revoke) the lease of the dynamic secret e.g. `vault lease renew <my-lease-id>` and `vault lease revoke <my-lease-id>`
+- Lease in Vault provides a time-limited authorization to access a resource or to generate a dynamic credential
+
 #### Basic Commands
 ```bash
 vault lease lookup database/creds/readonly/xxxx...
@@ -209,18 +219,10 @@ vault lease revoke -prefix aws/
 # remove all leases 
 vault lease revoke -force xxxx
 ```
-- Leases are a fundamental concept that refer to the duration of time that a piece of data, such as a secret or token, is valid
-- Lease is metadata containing information such as a time duration, renewability, and more
-- With every dynamic secret and service type authentication token, Vault creates a lease
-- Once the lease is expired, Vault can automatically revoke the data, secrets
-- lease_id is used to manage (renew / revoke) the lease of the dynamic secret e.g. `vault lease renew <my-lease-id>` and `vault lease revoke <my-lease-id>`
-- Lease in Vault provides a time-limited authorization to access a resource or to generate a dynamic credential
-
 
 ## 5. Secrets Engine
 - Secrets engines are components which store, generate, or encrypt data and plugin that extend the functionality
-- Secrets engines are enabled and isolated at a path
-- Secrets engines are enabled at a path in Vault
+- Secrets engines are enabled and isolated at a path in Vault
 - Cubbyhole and Identity are enabled by default and can NOT disable
 - Most secrets engines can be enabled, disabled, tuned, and moved via the CLI or API. `vault secrets enable aws`
 - There are static secrets (never expire) and dynamic secrets (generated when you need them)
@@ -418,9 +420,8 @@ curl -H "X-Vault-Token: $VAULT_TOKEN" -X GET http://127.0.0.1:8200/v1/secret/hel
 - The unseal process is done by running vault operator unseal or via the API
 - via API  `curl http://.../v1/sys/unseal --request ...`
 - Auto Unseal: the seal provider (HSM or cloud KMS) must be available throughout Vault's runtime and not just during the unseal process
-- If vault has sealed state then the master /root key is encrypted and locked
-- The master / root key is used to decrypt the encryption key > Encyption key can unencrypt the data on the storage backend
-- Root key is used to protect all vault data.
+- If vault has sealed state then the master key is encrypted and locked
+- The master key is used to decrypt the encryption key > Encyption key can unencrypt the data on the storage backend
 - `vault operator init` is the process by which Vault's storage backend is prepared to receive data. Vault generates an in-memory master key and applies shamirs secret sharing algorithm
 - Policies are just a named ACL rule
 - Client token is used for authentication of users
